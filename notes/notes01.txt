@@ -1,0 +1,70 @@
+fog of war as a layer on top of a map that makes everything darken
+	- it has to be represented by intensity map with range of 5
+	- should be drawn on top of map and non-emitting objects
+	- then the player, lights, firebolts
+	- there is a light source with 0.1 intensity
+	- light emitting objects produce intensity areas
+fog of war rains 
+
+tiles come up as one steps
+ - sometimes tiles dont come up at every step untill the last
+ - sometimes tiles shouldnt come up and the player should fall
+ - mobs always have tiles under them
+
+light is the camera direction
+ - somewhere 
+
+player 
+ - can chose to fall through 
+ - at some random position
+ - dealing fall damage to 1 tile around
+ - can walk N only if can walk NE+NW
+ - players can blend colors
+ - teleportations
+ - representation of player? 
+ - tank with something inside
+ - slides as ice
+ - boils as fire
+ - cracks as rock
+ 
+
+
+map waypoints
+ - rooms have entrences
+ - if it's not in direct line vision follow waypoints
+ - predefined movement routes
+
+
+what is animation
+ - animation takes variable amount of seconds to complete
+ - 2 types of animations
+	- transition from A to B
+	- active state expression animation
+	- are they the same?
+- interrupted animation
+- examples
+	-moving from tile A to B
+		- new position can be set only after 0.5 seconds
+		- new position is reserved for the one who started moving
+		- can be interrupted to go back 
+		- animation shows movement towards tile B but the actual position wont change
+		- position isn't dependent on animation only on game logic
+
+	-movement animation is A -> animate 0.5 -> B
+- implementation
+	anim_duration = 1.0 sec
+	anim_start_time
+	anim_end_time = anim_start_time + anim_duration;
+	last_frame_time
+	anim_total_frames = 8
+	anim_current_frame = 1
+	anim_fps = anim_total_frames / anim_duration;
+	
+	- next frame
+	anim_current_frame = last_frame_time / anim_duration
+	last_frame_time = 1/60 
+
+- happenings 
+	- have start and everyoen checks it's own time
+
+
