@@ -31,7 +31,7 @@ static unsigned int shader_map;
 
 
 
-#include "camera.h"
+
 
 #include <stdio.h>
  
@@ -50,7 +50,10 @@ static unsigned int shader_map;
 
 #include "cglm/types.h"
 
+
 #include "model_cube.h"
+ 
+#include "camera.h"
 
 typedef struct {
 	Camera_s * camera ;
@@ -60,10 +63,7 @@ typedef struct {
 } Game_imp;
 
 Game_imp * impl;
-
-unsigned int VBO_SSBO;
-unsigned int UBO_MOUSE;
-
+ 
 typedef  struct{
 	int ids[];
 } Shaderd_buffer;
@@ -75,17 +75,12 @@ void game_init(){
 	game = (Game *)impl;
  
  
-		 
-	//binding point 0
- 
-	
-
-
  
 
 	cam_init(&impl->camera);
 	//45/5
  
+	
 
 	cam_move_to_tile(impl->camera, 0,0);
  
@@ -111,105 +106,22 @@ void game_init(){
 
  
 
-	glGenBuffers(1, &VBO_SSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBO_SSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int[32]), nullptr, GL_DYNAMIC_READ);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, VBO_SSBO);	
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
- 
-
-//--
-	glGenBuffers(1, &UBO_MOUSE);
-	glBindBuffer(GL_UNIFORM_BUFFER, UBO_MOUSE);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(vec2), NULL, GL_STATIC_DRAW);  
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-	shader_bind_ubo_shader_bind("Mouse",UBO_MOUSE,1);
-
-
 }
 
  
 void game_render(){
 
-	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBO_SSBO);
-	// GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-	// memcpy(p, &buff, sizeof(unsigned int[32]));
-	// glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-	// int *idx = p;
-	// if(idx[0]  >= 0 && idx[0] <=32 )
-	// {
-	// 	printf("idx: %i\n",idx[0]);
-	// }
-	
-
-	
-
-	glBindBuffer(GL_UNIFORM_BUFFER,  UBO_MOUSE);
-	vec2 mouse;
-	mouse[0] = impl->camera->mouse_x;
-	mouse[1] = impl->camera->screen_h -impl->camera->mouse_y;
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(vec2), mouse );  
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-
-
+ 
 
 	shader_use(shader_map);
-	//model_floor_draw(impl->model_floor );
+	model_floor_draw(impl->model_floor );
 	 
-
-
-
-
-
+ 
 
 	model_cube_draw(impl->model_cube);
 
 
-	//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
  
-    // float readData[32] ={0};
-    // glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBO_SSBO);
-    // glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(readData), readData);
-	// glBindBuffer(GL_SHADER_STORAGE_BUFFER,0);
-
-	// bool printed =false;   
-	// for(int i=0;i<32;i++)
-	// {
-	// 	if(readData[i] > 0 && readData[i] < 1024)
-	// 	{
-	// 		printf("%f ",readData[i]);
-	// 		printed=true;
-	// 	}
-	// }
-	// if(printed)
-	// 	printf("\n");
-
-	float start_t = glfwGetTime();
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-	int readData[32] ={0};
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBO_SSBO);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(readData), readData);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER,0);
-	float end_t = glfwGetTime();
-	printf("diff: %f\n",end_t - start_t);
-	bool printed =false;   
-	for(int i=0;i<32;i++)
-	{
-		if(readData[i] > 0 && readData[i] < 1024)
-		{
-			//printf("%i ",readData[i]);
-			printed=true;
-		}
-	}
-	// if(printed)
-	// 	printf("\n");
 
 }
 

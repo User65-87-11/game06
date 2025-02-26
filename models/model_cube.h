@@ -32,7 +32,7 @@ typedef struct Model_cube_inst
 typedef struct Model_cube{
  
 	unsigned int shader_id;
-	unsigned int VAO,VBO[4],VBO_MODEL_ID;
+	unsigned int VAO,VBO[4];
 	unsigned int texture;
 	size_t inst_cnt;
 	Model_cube_inst  *insts ;
@@ -114,34 +114,39 @@ void model_cube_init(Model_cube * ref[static 1]){
 		model_cube_free(ref);
 	}
 	*ref = calloc(1,sizeof(Model_cube));
-	 
+ 
 	Model_cube model = *(*ref);
-	model.inst_cnt = 32*32;
-	model.insts = calloc(1,sizeof(Model_cube_inst) * model.inst_cnt);
-
-	srand(time(NULL));
 	Model_floor * floor = game->model_floor;
+	model.inst_cnt =1;
+	
+	if(model.inst_cnt > floor->num_inst) 
+	{
+		model.inst_cnt = floor->num_inst;
+	}
+	model.insts = calloc(1,sizeof(Model_cube_inst) * model.inst_cnt);
+ 
+	srand(time(NULL));
 
-	for(int y=0;y<floor->h;y++)
-	for(int x=0;x<floor->w;x++)
+
+	 
+	for(int i=0;i<model.inst_cnt;i++)
  
 	{
-	 	int pos = y*floor->h + x;
-		glm_mat4_identity(model.insts[pos].m4_model);
-		
+	 	int tiley = i / floor->h ;
+		int tilex = i % floor->w ;
 
-		 
-		
-	 
+ 
+		glm_mat4_identity(model.insts[i].m4_model);
+ 
 		float * color  ;
-		model_floor_get_color(game->model_floor, x, y, &color);
+		model_floor_get_color(game->model_floor, tilex, tiley, &color);
 		float black [4]={0.0f,0.0f,0.0f,1.0f};
 		float white [4]={1.0f,1.0f,1.0f,1.0f};
 
 
-		glm_vec4_copy(color, model.insts[pos].v4_color);
+		
 
-		model_cube_move_to_tile(&model.insts[pos], x, y);
+		model_cube_move_to_tile(&model.insts[i], tilex, tiley);
 
 
 		if(model_color_cmp(color,black) || model_color_cmp(color,white))
@@ -151,10 +156,12 @@ void model_cube_init(Model_cube * ref[static 1]){
 			{
 				z[2] =0.0f;
 			}
-			
-			glm_scale(model.insts[pos].m4_model, z);
+			color = z;
+			glm_scale(model.insts[i].m4_model, z);
 			
 		}
+
+		glm_vec4_copy(color, model.insts[i].v4_color);
 
 		
 		
@@ -162,12 +169,12 @@ void model_cube_init(Model_cube * ref[static 1]){
 		
 		//glm_vec4_zero(model.insts[i].v4_color);
 	 
-		model.insts[pos].idx  = pos;
-		model.insts[pos].parent = *ref;
+		model.insts[i].idx  = i;
+		model.insts[i].parent = *ref;
 	}
 
 	 
-
+	printf("aaa \n");
 	constexpr int vsize = max_sides*6*3;
 	constexpr int vert_cnt = max_sides*6;
  
@@ -266,40 +273,23 @@ void model_cube_init(Model_cube * ref[static 1]){
 			cube[i][j] =cube[i][j] * cellSize;
 		}
 	}	
-	
+ 
 	glGenVertexArrays(1,&model.VAO);
 	glGenBuffers(4, model.VBO);
-	glGenBuffers(1, &model.VBO_MODEL_ID);
-	
+ 
+ 
 	 
 	//--
 	glBindVertexArray( model.VAO);
 	
-	int * buff  = calloc(1,  sizeof(int[model.inst_cnt]));
-	for (int i = 0; i < model.inst_cnt; i++) {
-		
-		buff[i] = i;
-	}
-
-	
-	buffer_describe_int(model.VBO_MODEL_ID,GL_ARRAY_BUFFER, 1, 7);
-	buffer_set_data(model.VBO_MODEL_ID,GL_ARRAY_BUFFER, sizeof(int[model.inst_cnt]),buff, GL_STATIC_DRAW);
-	free(buff);
-	// printf("model.inst_cnt %i\n", model.inst_cnt);
-	// for (int i = 0; i < model.inst_cnt; i++) {
-		
-	// 	int data = i  ;
-		
-	// 	buffer_set_subdata(model.VBO_MODEL_ID,GL_ARRAY_BUFFER,sizeof( int),&data,sizeof( int)*i);
-	// }
-	 
-
-
+ 
+ 
+ 
 
 	buffer_describe_vec3(model.VBO[0],GL_ARRAY_BUFFER, 0, 0);
 	buffer_set_data(model.VBO[0],GL_ARRAY_BUFFER, sizeof(cube),cube, GL_STATIC_DRAW);
 
-
+ 
 
 	//--colors
 
@@ -315,8 +305,8 @@ void model_cube_init(Model_cube * ref[static 1]){
 		buffer_set_subdata(model.VBO[1],GL_ARRAY_BUFFER,sizeof(float[4]),col,sizeof(float[4])*i);
 	}
 	 
-
-
+	 
+	
  
 	float texCoords[6 * 6][2] = {
 		// Front face
@@ -347,8 +337,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	buffer_describe_vec2(model.VBO[2], GL_ARRAY_BUFFER, 0, 2);
 	buffer_set_data(model.VBO[2], GL_ARRAY_BUFFER, sizeof(texCoords), texCoords, GL_STATIC_DRAW);
 
-
-
+	 
 	///--- model matrix
 
 	buffer_describe_mat4(model.VBO[3], GL_ARRAY_BUFFER,1, 3);
@@ -366,7 +355,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 			sizeof(float[16])*i);
  
 	}
-  
+	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(0); 
@@ -387,7 +376,7 @@ void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y){
 	float posx = x*camera->tile_size;
 	float posy = y*camera->tile_size;
 	vec4 v ={posx,posy,0.0f ,1.0f};
-	//printf("model_cube_move_to %f %f \n",v[0],v[1]);
+ 
 	 
 
  
