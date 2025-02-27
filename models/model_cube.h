@@ -5,6 +5,7 @@
 
 #include "cglm/affine.h"
 #include "cglm/vec3.h"
+#include "obj_reader/obj.h"
 #include <cglm/mat4.h>
 #include <cglm/cglm.h>
 #include <cglm/types.h>
@@ -64,6 +65,7 @@ void model_cube_init(Model_cube * ref[static 1]);
 
 #include "camera.h"
 #include "cglm/vec4.h"
+#include "obj_reader/obj.h"
 
 #include "model_floor.h"
 #include "model_2d.h"
@@ -72,6 +74,7 @@ void model_cube_init(Model_cube * ref[static 1]);
 #include "../game/buffer.h"
 #include "stb_image.h"
 #include "glm_wrap.h"
+
  
  
 extern Camera_s *camera;
@@ -108,6 +111,7 @@ void load_texture(unsigned int * texture_id){
 	}
 	stbi_image_free(data);
 }
+ 
 void model_cube_init(Model_cube * ref[static 1]){
 //	Camera_s * camera = game->camera;
 	if(*ref)
@@ -117,7 +121,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	*ref = calloc(1,sizeof(Model_cube));
 	
 	//Model_cube model = *(*ref);
- 
+	
 	 
 	model_cube->inst_cnt = 1;
 
@@ -333,7 +337,10 @@ void model_cube_init(Model_cube * ref[static 1]){
 			cube[i][j] =cube[i][j] * cellSize;
 		}
 	}	
- 
+
+	obj * o_cube = obj_create("../assets/models/cube_uv_norm_1x1.obj");
+	
+	obj_get_vert_v(const obj *, int, float *)
 	glGenVertexArrays(1,&model_cube->VAO);
 	glGenBuffers(5, model_cube->VBO);
  
@@ -342,6 +349,16 @@ void model_cube_init(Model_cube * ref[static 1]){
 	//--
 	glBindVertexArray( model_cube->VAO);
 	
+	/**
+	
+	layout (location = 0) in vec3 vpos;
+	layout (location = 1) in vec4 vcol;
+	layout (location = 2) in vec2 texture_coords;
+	layout (location = 3) in mat4 model;
+	// +4,5,6
+	
+	layout (location = 7) in vec3 normal;
+	*/
  
  
  
@@ -437,6 +454,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	glBindVertexArray(0); 
  
  
+	obj_delete(o_cube);
 }
  
 
