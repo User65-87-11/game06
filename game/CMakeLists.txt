@@ -31,5 +31,11 @@ target_link_libraries(
 	#"../../libs/freetype/vs2015-2022/win64/freetype"
 )
 
+target_sources(
+	main PRIVATE 
+	../external/obj_reader/obj.c 
+	)
  
- 
+target_compile_definitions(
+	main PRIVATE 
+	CONF_NO_GL=1)	

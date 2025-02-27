@@ -40,9 +40,9 @@ int gl_key[MAX_KEYS]={};
 #include "game.h"
  
 
- 
+extern Camera_s * camera ;
 
-extern Game * game; 
+// extern Game * game; 
  
 
 void keys_init(){
@@ -71,7 +71,7 @@ bool keys_is_released(int glKey)
 }
 void keys_processInput(void * win)
 {
-	Camera_s * camera = game->camera;
+	 
 
 	GLFWwindow * window = win;
 	

@@ -84,7 +84,7 @@ void model_rect_base_vert(Model_2d_rect  rect[static 1], float * v6x2){
 }	
 
 void model_2d_init(Model_2d * m[static 1]){
-	Camera_s * camera = game->camera;
+ 
 	if((*m)!= nullptr){
 		
 		model_2d_free(m);
@@ -153,7 +153,7 @@ void model_2d_update_buffers(Model_2d m[static 1]){
 	glBufferSubData(GL_ARRAY_BUFFER,0, sizeof(pos) , pos); 
 }
 void model_2d_update_shaders(Model_2d m[static 1]){
-	Camera_s * camera = game->camera;
+ 
  
 	vec4 v ={};
 	v[0] = m->rects[0].x;

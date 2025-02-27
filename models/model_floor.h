@@ -39,13 +39,16 @@ bool model_color_cmp(float * a,float * b);
 
 
 #include "file/file.h"
+
 #include "../game/shader.h"
 #include "../game/buffer.h"
+
 #include "../game/game.h"
+
 #include "camera.h"
 #include "glm_wrap.h"
 
-extern Game *game;
+extern Camera_s *camera;
 
 static float colors[7][4] = {
 	{0.5f,1.0f,0.2f,1.0f},
@@ -92,7 +95,7 @@ void model_floor_init(Model_floor * ptr[static 1] ){
 	printf("ok ? %s %i %i\n",f_map.err,f_map.read_size,f_map.data_size);
 	inst.map2d = f_map.data;
 	
-	Camera_s cam_inst = *((Camera_s *)game->camera);
+	// Camera_s cam_inst = *((Camera_s *)game->camera);
 	 
 	glm_mat4_identity(inst.model);
 	
@@ -112,15 +115,15 @@ void model_floor_init(Model_floor * ptr[static 1] ){
 
  
  
-	float cell_size = cam_inst.tile_size;
+	float tile_size = camera->tile_size;
 
 	float square[6][3]= {
 		{0, 0, 0},
-		{0, 0 + cell_size, 0},
-		{0 + cell_size, 0 + cell_size, 0},
-		{0 + cell_size, 0, 0},
+		{0, 0 + tile_size, 0},
+		{0 + tile_size, 0 + tile_size, 0},
+		{0 + tile_size, 0, 0},
 		{0, 0, 0},
-		{0 + cell_size, 0 + cell_size, 0},
+		{0 + tile_size, 0 + tile_size, 0},
 	};
 	buffer_set_data(inst.VBO[0], GL_ARRAY_BUFFER, sizeof(square), square, GL_STATIC_DRAW);
 	buffer_set_data(inst.VBO[1], GL_ARRAY_BUFFER, sizeof(vec4)  * inst.num_inst, nullptr, GL_STATIC_DRAW);
@@ -131,7 +134,7 @@ void model_floor_init(Model_floor * ptr[static 1] ){
 
 	int w = inst.w;
 	int h = inst.h;
-	float tile_size = cam_inst.tile_size;
+
  
 	for(int y =h-1;y>=0;y--){
 		for(int x =0;x<w;x++){
