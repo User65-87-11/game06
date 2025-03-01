@@ -74,10 +74,7 @@ bool model_color_cmp(float * a,float * b){
 	return (a[0] - b[0]) + (a[1] - b[1])+ (a[2] - b[2])+ (a[3] - b[3]) == 0;
 }
 
-// void model_floor_get_color(Model_floor ptr[static 1],int tilex,int tiley, float ** out){
-// 	int pos = tiley * ptr->h + tilex;
-// 	*out = colors[ptr->map2d[pos]];
-// }
+ 
 void model_floor_draw(Model_floor ptr[static 1]){
 	glBindTexture(GL_TEXTURE_2D,ptr->texture01);
 	glBindVertexArray(ptr->VAO);
@@ -159,33 +156,7 @@ void model_floor_init(Model_floor * ptr[static 1] ){
 	free(vd.data);
 	free(vt.data);
 	free(vn.data);
-	// int w = inst.w;
-	// int h = inst.h;
 
- 
-	// for(int y =h-1;y>=0;y--){
-	// 	for(int x =0;x<w;x++){
-
-		 
-	// 		int pos = y*h + x;
-	// 		float *col = nullptr;
-	// 		model_floor_get_color(&inst, x, y, &col);
-	// 		buffer_set_subdata( inst.VBO_COL,GL_ARRAY_BUFFER, sizeof(float[4]),col, pos *sizeof(float[4]));
- 
-	// 		mat4 m ;
-	// 		vec4 v;
-	// 		v[0] = x * tile_size;
-	// 		v[1] = y * tile_size;
-	// 		v[2] = 0;
-	// 		v[3] = 1;
-	// 		glm_mat4_identity(m);
-	// 		glm_translate(m, v);
-		 
-	// 		buffer_set_subdata( inst.VBO_TRANSFORMS,GL_ARRAY_BUFFER, sizeof(m),m, pos *sizeof(m));
-
-	// 	}
-	// 	*(*ptr) = inst;
-	// }
  
  	
 }
@@ -193,11 +164,7 @@ void model_floor_free(Model_floor  *ptr[static 1]){
 	if(*ptr != nullptr)
 	{	
 		Model_floor *map = *ptr;
-		// if(map->map2d!=nullptr)
-		// {
-		 
-		// 	free(map->map2d);
-		// }
+ 
 		free(*ptr);
 	}
 	*ptr = nullptr;

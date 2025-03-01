@@ -145,14 +145,16 @@ static void game_key_handler(void * w, int key, int scancode, int action, int mo
 
 	 
 }
-
+ 
 void game_mouse_handler(void* w, double xpos, double ypos){
+	// 0.01
+ 
 	GLFWwindow * window = w;
  
 	camera->mouse_x =  xpos;
 	camera->mouse_y =  ypos;
  
-
+	
 	
 }
 void game_framebuffer_size_handler(void* w, int width, int height)

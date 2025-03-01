@@ -19,7 +19,7 @@ typedef struct Model_cube_inst
 {
 	int idx;
 	int tilex,tiley;
- 
+	
 
 
 	
@@ -38,7 +38,11 @@ typedef struct Model_cube{
 
 	 
 	mat4 * m4_models ;
-	vec4 * v4_colors  ;
+	vec4 * v4_colors ;
+	struct {
+
+	}s;
+	
   
 } Model_cube;
 
@@ -86,20 +90,16 @@ extern Model_floor * model_floor;
 extern Model_cube * model_cube;
 
 
-/**
-typedef void (*file_reader_callback)(void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len);
-*/
  
-
 void model_cube_init(Model_cube * ref[static 1]){
-//	Camera_s * camera = game->camera;
+ 
 	if(*ref)
 	{
 		model_cube_free(ref);
 	}
 	*ref = calloc(1,sizeof(Model_cube));
 	
-	//Model_cube model = *(*ref);
+ 
 	
 	 
 	model_cube->inst_cnt = 1;
@@ -126,7 +126,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 		glm_mat4_identity((vec4 *)&model_cube->m4_models[i]);
  
 		float * color  ;
-		//model_floor_get_color(model_floor, tilex, tiley, &color);
+	
 		float black [4]={0.0f,0.0f,0.0f,1.0f};
 		float white [4]={1.0f,1.0f,1.0f,1.0f};
 
@@ -138,26 +138,10 @@ void model_cube_init(Model_cube * ref[static 1]){
 		vec4 z = {scale,scale,scale,1.f};
 		glm_scale((vec4 *)&model_cube->m4_models[i], z);
 
-		// if(model_color_cmp(color,black) || model_color_cmp(color,white))
-		// {
-		// 	z[2] = 1.3f;
-		// 	if(model_color_cmp(color,white))
-		// 	{
-		// 		z[2] =0.0f;
-		// 	}
-		// 	color = z;
-		// 	glm_scale((vec4 *)&model_cube->m4_models[i], z);
-			
-		// }
+ 
 
 		glm_vec4_copy(color, (float *)&model_cube->v4_colors[i]);
-
-		
-		
-		
-		
-		//glm_vec4_zero(model.insts[i].v4_color);
-	 
+ 
 		model_cube->insts[i].idx  = i;
  
 	}
@@ -168,10 +152,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	constexpr int vert_cnt = max_sides*6;
 	constexpr int triang_cnt = max_sides*2;
  
-
  
-	//glm_mat4_identity((vec4 *)gl_inst.m4_base_model);
-	
  
 	load_texture(&model_cube->texture01,"../assets/32x32_texture01.png");
  
@@ -188,20 +169,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	 
 	//--
 	glBindVertexArray( model_cube->VAO);
-	
-	/**
-	
-	layout (location = 0) in vec3 vpos;
-	layout (location = 1) in vec4 vcol;
-	layout (location = 2) in vec2 texture_coords;
-	layout (location = 3) in mat4 model;
-	// +4,5,6
-	
-	layout (location = 7) in vec3 normal;
-	*/
- 
- 
-	//attrib.vertices
+	 
 
 	WF *wf;
 	wf_load(&wf, "../assets/models/cube01.obj");
@@ -214,9 +182,6 @@ void model_cube_init(Model_cube * ref[static 1]){
 	buffer_set_data(model_cube->VBO_VERT,GL_ARRAY_BUFFER, vdata_len,vdata, GL_STATIC_DRAW);
 	free(vdata);
  
- 
-
-
 
 	//--colors
 
@@ -224,12 +189,6 @@ void model_cube_init(Model_cube * ref[static 1]){
 	buffer_set_data(model_cube->VBO_COL,GL_ARRAY_BUFFER,model_cube->inst_cnt*sizeof(float[4]), model_cube->v4_colors, GL_DYNAMIC_DRAW);
  
 	
-/**
-layout (location = 0) in vec3 vpos;
-layout (location = 1) in vec4 vcol;
-layout (location = 2) in vec2 texture_coords;
-layout (location = 3) in vec3 normal;
-*/
  
  
 
@@ -282,8 +241,6 @@ void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y){
 	float posy = y*camera->tile_size;
 	vec4 v ={posx,posy,0.0f ,1.0f};
  
-	 
-
 	
 	glm_mat4_identity((vec4 *)&model_cube->m4_models[inst.idx]);
 	glm_translate((vec4 *)&model_cube->m4_models[inst.idx],v);
@@ -313,37 +270,11 @@ void model_cube_free(Model_cube  *p [static 1]){
 	
 }
  
+ 
 #endif
 
-
 /**
+	1.window normal mouse pos
+	2.dot product for all objects
 
-// Create and bind an SSBO
-GLuint ssbo;
-glGenBuffers(1, &ssbo);
-glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * dataSize, nullptr, GL_DYNAMIC_COPY);
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
-
-// Dispatch compute shader or render
-glUseProgram(computeShaderProgram);
-glDispatchCompute(workGroupsX, workGroupsY, workGroupsZ);
-glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-// Map the buffer to CPU-accessible memory
-glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-float* data = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-// Read the data
-for (int i = 0; i < dataSize; i++) {
-    std::cout << data[i] << std::endl;
-}
-
-// Unmap the buffer
-glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-*/
-
-/**
-UNIFORM BUFFERS
-Switching between uniform buffer bindings is typically faster than switching dozens of uniforms in a program. Therefore, uniform buffers can be used to quickly change between different sets of uniform data for different objects that share the same program.
 */
