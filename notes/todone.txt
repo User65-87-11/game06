@@ -1,10 +1,3 @@
 -constexpr
 	- in vscode it was set to wrong version
-
-
-
-- OOB
- Object-Oriented Bounding Boxes around your geometry and detect if they collide with the ray 
-
-
- - when defining impmenentation in main influences
+ 
