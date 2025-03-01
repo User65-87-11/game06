@@ -1,6 +1,7 @@
 #pragma once
  
 
+#include "camera.h"
 #include "cglm/mat4.h"
 #include "cglm/types.h"
 #include "glmath.h"
@@ -43,10 +44,12 @@ void model_2d_set_shader( Model_2d[static 1],unsigned int shader_id);
 #include <stdio.h>
 #include <stdlib.h>
 #include "../game/shader.h"
-#include "camera.h"
+//#include "camera.h"
 #include "model_floor.h"
 #include "glm_wrap.h"
 
+
+extern Camera_s *camera;
  
  
 void model_2d_set_shader( Model_2d model[static 1],unsigned int shader_id){

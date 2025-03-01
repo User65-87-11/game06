@@ -5,7 +5,7 @@
 
 #include "cglm/affine.h"
 #include "cglm/vec3.h"
-#include "obj_reader/obj.h"
+ 
 #include <cglm/mat4.h>
 #include <cglm/cglm.h>
 #include <cglm/types.h>
@@ -30,8 +30,9 @@ typedef struct Model_cube_inst
 typedef struct Model_cube{
  
 	unsigned int shader_id;
-	unsigned int VAO,VBO[5];
-	unsigned int texture;
+	unsigned int VAO;
+	unsigned int VBO_NORM,VBO_COL,VBO_VERT,VBO_TEXTCOORD,VBO_TRANSFORM;
+	unsigned int texture01;
 	size_t inst_cnt;
 	Model_cube_inst  *insts ;
 
@@ -42,11 +43,11 @@ typedef struct Model_cube{
 } Model_cube;
 
  
-void model_cube_free(Model_cube  *p [static 1]);
-void model_cube_draw(Model_cube p [static 1]);
-void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y);
-void model_cube_update_buffers(Model_cube p [static 1]);
-void model_cube_init(Model_cube * ref[static 1]);
+extern void model_cube_free(Model_cube  *p [static 1]);
+extern void model_cube_draw(Model_cube p [static 1]);
+extern void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y);
+extern void model_cube_update_buffers(Model_cube p [static 1]);
+extern void model_cube_init(Model_cube * ref[static 1]);
  
 
 #ifdef MODEL_CUBE_IMPLEMENTATION
@@ -65,53 +66,31 @@ void model_cube_init(Model_cube * ref[static 1]);
 
 #include "camera.h"
 #include "cglm/vec4.h"
-#include "obj_reader/obj.h"
+ 
+
 
 #include "model_floor.h"
+
 #include "model_2d.h"
 #include "cglm/affine-pre.h"
 #include "cglm/mat4.h"
 #include "../game/buffer.h"
-#include "stb_image.h"
-#include "glm_wrap.h"
 
- 
+#include "glm_wrap.h"
+#include "../game/wavefront.h"
+
+#include "../game/load_texture.h"
  
 extern Camera_s *camera;
 extern Model_floor * model_floor;
 extern Model_cube * model_cube;
 
 
-void load_texture(unsigned int * texture_id){
-	 
-	glGenTextures(1, texture_id);
-	glBindTexture(GL_TEXTURE_2D, *texture_id);
-	// set the texture wrapping/filtering options (on the currently bound texture object)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// load and generate the texture
-	int width, height, nrChannels;
-	unsigned char *data = stbi_load("../assets/img/texture_frame.png", &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		if(nrChannels == 4)
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		}else {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		}
-		
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		printf( "Failed to load texture\n" );
-	}
-	stbi_image_free(data);
-}
+/**
+typedef void (*file_reader_callback)(void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len);
+*/
  
+
 void model_cube_init(Model_cube * ref[static 1]){
 //	Camera_s * camera = game->camera;
 	if(*ref)
@@ -135,38 +114,41 @@ void model_cube_init(Model_cube * ref[static 1]){
 	srand(time(NULL));
 
  
-	 
+	float cellSize = camera->tile_size;
+	float scale = cellSize ;
 	for(int i=0;i<model_cube->inst_cnt;i++)
  
 	{
-	 	int tiley = i / model_floor->h ;
-		int tilex = i % model_floor->w ;
+	 	int tiley = i / camera->tile_size ;
+		int tilex = i % (int)camera->tile_size;
 
  
 		glm_mat4_identity((vec4 *)&model_cube->m4_models[i]);
  
 		float * color  ;
-		model_floor_get_color(model_floor, tilex, tiley, &color);
+		//model_floor_get_color(model_floor, tilex, tiley, &color);
 		float black [4]={0.0f,0.0f,0.0f,1.0f};
 		float white [4]={1.0f,1.0f,1.0f,1.0f};
 
-
+		color = white;
 		
 
 		model_cube_move_to_tile(&model_cube->insts[i], tilex, tiley);
+	
+		vec4 z = {scale,scale,scale,1.f};
+		glm_scale((vec4 *)&model_cube->m4_models[i], z);
 
-
-		if(model_color_cmp(color,black) || model_color_cmp(color,white))
-		{
-			vec4 z = {1.f,1.f,0.3f,1.f};
-			if(model_color_cmp(color,white))
-			{
-				z[2] =0.0f;
-			}
-			color = z;
-			glm_scale((vec4 *)&model_cube->m4_models[i], z);
+		// if(model_color_cmp(color,black) || model_color_cmp(color,white))
+		// {
+		// 	z[2] = 1.3f;
+		// 	if(model_color_cmp(color,white))
+		// 	{
+		// 		z[2] =0.0f;
+		// 	}
+		// 	color = z;
+		// 	glm_scale((vec4 *)&model_cube->m4_models[i], z);
 			
-		}
+		// }
 
 		glm_vec4_copy(color, (float *)&model_cube->v4_colors[i]);
 
@@ -190,159 +172,17 @@ void model_cube_init(Model_cube * ref[static 1]){
  
 	//glm_mat4_identity((vec4 *)gl_inst.m4_base_model);
 	
-	int tw=32;
-	int th=32;
-	int outline_texture  [tw][th];
-	memset(outline_texture,0, tw*th * sizeof(int));
  
-	for(int i=2;i<tw-1;i++){
-		outline_texture[2][i] = 0x000000ff;
-		outline_texture[3][i] = 0x111111ff;
-		outline_texture[5][i] = 0x111111ff;
-		outline_texture[6][i] = 0x000000ff;
- 
-		outline_texture[tw-6][i] = 0x000000ff;
-		outline_texture[tw-5][i] = 0x111111ff;
-		outline_texture[tw-3][i] = 0x111111ff;
-		outline_texture[tw-2][i] = 0x000000ff;
-
-		outline_texture[i][tw-2] = 0x000000ff;
-		outline_texture[i][tw-3] = 0x111111ff;
-		outline_texture[i][tw-5] = 0x111111ff;
-		outline_texture[i][tw-6] = 0x000000ff;
- 
-
-		outline_texture[i][2] = 0x000000ff;
-		outline_texture[i][3] = 0x111111ff;
-		outline_texture[i][5] = 0x111111ff;
-		outline_texture[i][6] = 0x000000ff;
-
-		
-	}
-	for(int i=4;i<tw-3;i++){
-
-		outline_texture[4][i] = 0xFF0000ff;
-		outline_texture[i][4] = 0xFF0000ff;
-		outline_texture[i][tw-4] = 0xFF0000ff;
-		outline_texture[tw-4][i] = 0xFF0000ff;
-	}
-	//load_texture(outline_texture);
+	load_texture(&model_cube->texture01,"../assets/32x32_texture01.png");
  
  
-	// float cube[vert_cnt][3] =
-	// {
-	// 	{0.0f,0.0f,0.0f},
-	// 	{1.0f,0.0f,0.0f},
-	// 	{1.0f,1.0f,0.0f},
-
-	// 	{1.0f,1.0f,0.0f},
-	// 	{0.0f,1.0f,0.0f},
-	// 	{0.0f,0.0f,0.0f},
-
-	// 	{0.0f,0.0f,1.0f},
-	// 	{1.0f,0.0f,1.0f},
-	// 	{1.0f,1.0f,1.0f},
-
-	// 	{1.0f,1.0f,1.0f},
-	// 	{0.0f,1.0f,1.0f},
-	// 	{0.0f,0.0f,1.0f},
-
-	// 	{0.0f,1.0f,1.0f},
-	// 	{0.0f,1.0f,0.0f},
-	// 	{0.0f,0.0f,0.0f},
-
-	// 	{0.0f,0.0f,0.0f},
-	// 	{0.0f,0.0f,1.0f},
-	// 	{0.0f,1.0f,1.0f},
-
-	// 	{1.0f,1.0f,1.0f},
-	// 	{1.0f,1.0f,0.0f},
-	// 	{1.0f,0.0f,0.0f},
-
-	// 	{1.0f,0.0f,0.0f},
-	// 	{1.0f,0.0f,1.0f},
-	// 	{1.0f,1.0f,1.0f},
-
-	// 	{0.0f,0.0f,0.0f},
-	// 	{1.0f,0.0f,0.0f},
-	// 	{1.0f,0.0f,1.0f},
-
-	// 	{1.0f,0.0f,1.0f},
-	// 	{0.0f,0.0f,1.0f},
-	// 	{0.0f,0.0f,0.0f},
-
-	// 	{0.0f,1.0f,0.0f},
-	// 	{1.0f,1.0f,0.0f},
-	// 	{1.0f,1.0f,1.0f},
-
-	// 	{1.0f,1.0f,1.0f},
-	// 	{0.0f,1.0f,1.0f},
-	// 	{0.0f,1.0f,0.0f}	
-	// }; 
-	float cube[36][3] =
-{
-    {-1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
-
-    { 1.0f,  1.0f, -1.0f},
-    {-1.0f,  1.0f, -1.0f},
-    {-1.0f, -1.0f, -1.0f},
-
-    {-1.0f, -1.0f,  1.0f},
-    { 1.0f, -1.0f,  1.0f},
-    { 1.0f,  1.0f,  1.0f},
-
-    { 1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f, -1.0f,  1.0f},
-
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f, -1.0f},
-    {-1.0f, -1.0f, -1.0f},
-
-    {-1.0f, -1.0f, -1.0f},
-    {-1.0f, -1.0f,  1.0f},
-    {-1.0f,  1.0f,  1.0f},
-
-    { 1.0f,  1.0f,  1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
-
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f,  1.0f},
-    { 1.0f,  1.0f,  1.0f},
-
-    {-1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f,  1.0f},
-
-    { 1.0f, -1.0f,  1.0f},
-    {-1.0f, -1.0f,  1.0f},
-    {-1.0f, -1.0f, -1.0f},
-
-    {-1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f,  1.0f},
-
-    { 1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f, -1.0f}
-};
-	float cellSize = camera->tile_size;
  
-	for(int i=0;i< vert_cnt ;i++ ){
-		for(int j=0;j<3;j++)
-		{
-			cube[i][j] =cube[i][j] * cellSize;
-		}
-	}	
-
-	obj * o_cube = obj_create("../assets/models/cube_uv_norm_1x1.obj");
-	
-	obj_get_vert_v(const obj *, int, float *)
 	glGenVertexArrays(1,&model_cube->VAO);
-	glGenBuffers(5, model_cube->VBO);
+	glGenBuffers(1, &model_cube->VBO_VERT);
+	glGenBuffers(1, &model_cube->VBO_COL);
+	glGenBuffers(1, &model_cube->VBO_NORM);
+	glGenBuffers(1, &model_cube->VBO_TRANSFORM);
+	glGenBuffers(1, &model_cube->VBO_TEXTCOORD);
  
  
 	 
@@ -361,90 +201,63 @@ void model_cube_init(Model_cube * ref[static 1]){
 	*/
  
  
+	//attrib.vertices
+
+	WF *wf;
+	wf_load(&wf, "../assets/models/cube01.obj");
+
+	float * vdata;
+	size_t vdata_len ;
+ 	wf_get_vert_data(wf, &vdata, &vdata_len);
  
-
-	buffer_describe_vec3(model_cube->VBO[0],GL_ARRAY_BUFFER, 0, 0);
-	buffer_set_data(model_cube->VBO[0],GL_ARRAY_BUFFER, sizeof(cube),cube, GL_STATIC_DRAW);
-
+	buffer_describe_vec3(model_cube->VBO_VERT,GL_ARRAY_BUFFER, 0, 0);
+	buffer_set_data(model_cube->VBO_VERT,GL_ARRAY_BUFFER, vdata_len,vdata, GL_STATIC_DRAW);
+	free(vdata);
+ 
  
 
 
 
 	//--colors
 
-	buffer_describe_vec4(model_cube->VBO[1],GL_ARRAY_BUFFER, 1, 1);
-	buffer_set_data(model_cube->VBO[1],GL_ARRAY_BUFFER,model_cube->inst_cnt*sizeof(float[4]), model_cube->v4_colors, GL_DYNAMIC_DRAW);
+	buffer_describe_vec4(model_cube->VBO_COL,GL_ARRAY_BUFFER, 1, 1);
+	buffer_set_data(model_cube->VBO_COL,GL_ARRAY_BUFFER,model_cube->inst_cnt*sizeof(float[4]), model_cube->v4_colors, GL_DYNAMIC_DRAW);
  
 	
-
-	// //for (int i = 0; i < model.inst_cnt; i++) {
-		
-	// 	float * col =  (float*)model.v4_colors[i];
-	 
-	// 	buffer_set_subdata(model.VBO[1],GL_ARRAY_BUFFER,sizeof(float[4]),col,sizeof(float[4])*i);
-	// }
-	 
-	 
-	
+/**
+layout (location = 0) in vec3 vpos;
+layout (location = 1) in vec4 vcol;
+layout (location = 2) in vec2 texture_coords;
+layout (location = 3) in vec3 normal;
+*/
  
-	float texCoords[vert_cnt][2] = {
-		// Front face
-		{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f},
-		{1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f},
-	
-		// Back face
-		{1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f},
-		{0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f},
-	
-		// Left face
-		{1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f},
-		{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f},
-	
-		// Right face
-		{1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f},
-		{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f},
-	
-		// Bottom face
-		{0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f},
-		{1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f},
-	
-		// Top face
-		{0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f},
-		{1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f}
-	};
-	
-	buffer_describe_vec2(model_cube->VBO[2], GL_ARRAY_BUFFER, 0, 2);
-	buffer_set_data(model_cube->VBO[2], GL_ARRAY_BUFFER, sizeof(texCoords), texCoords, GL_STATIC_DRAW);
+ 
 
+	float * tdata;
+	size_t tdata_len ;
+ 	wf_get_textcoord_data(wf, &tdata, &tdata_len);
+
+
+	buffer_describe_vec2(model_cube->VBO_TEXTCOORD, GL_ARRAY_BUFFER, 0, 2);
+	buffer_set_data(model_cube->VBO_TEXTCOORD, GL_ARRAY_BUFFER, tdata_len, tdata, GL_STATIC_DRAW);
+	free(tdata);
 	
+
+	float * ndata;
+	size_t ndata_len ;
+ 	wf_get_textcoord_data(wf, &ndata, &ndata_len);
+
+
 	//normals 2*vec3 per triang
 	//norm per vertex
-	buffer_describe_vec3(model_cube->VBO[4],GL_ARRAY_BUFFER, 0, 7);
-	buffer_set_data(model_cube->VBO[4],GL_ARRAY_BUFFER, sizeof(vec3)*vert_cnt, nullptr, GL_STATIC_DRAW);
-	
-	vec3 * norms = malloc(sizeof(vec3)*vert_cnt);
-	for(int i=0;i<triang_cnt;i++)
-	{
-		int factor = i * 3;
-		float * a = (float*) cube[factor ];
-		float * b = (float*) cube[factor + 1];
-		float * c = (float*) cube[factor + 2];
-
-		vec3 u ,v ,n;
-
-		glm_vec3_sub(a, b, u);
-		glm_vec3_sub(a, c, v);
-		glm_vec3_cross(u, v, n);
-		glm_vec3_copy(n, norms[i]);
-		glm_vec3_copy(n, norms[i + 1]);
-		glm_vec3_copy(n, norms[i + 2]);
-		
-	}
-
+	buffer_describe_vec3(model_cube->VBO_NORM,GL_ARRAY_BUFFER, 0, 3);
+	buffer_set_data(model_cube->VBO_NORM,GL_ARRAY_BUFFER, ndata_len, ndata, GL_STATIC_DRAW);
+	free(ndata);
+ 
 ///--- model matrix
 
-	buffer_describe_mat4(model_cube->VBO[3], GL_ARRAY_BUFFER,1, 3);
-	buffer_set_data(model_cube->VBO[3], GL_ARRAY_BUFFER, model_cube->inst_cnt*sizeof(float[16]), model_cube->m4_models, GL_DYNAMIC_DRAW);
+	buffer_describe_mat4(model_cube->VBO_TRANSFORM, GL_ARRAY_BUFFER,1, 10);
+	buffer_set_data(model_cube->VBO_TRANSFORM, GL_ARRAY_BUFFER, model_cube->inst_cnt*sizeof(float[16]), model_cube->m4_models, GL_DYNAMIC_DRAW);
 
 	//unset data
  
@@ -454,7 +267,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	glBindVertexArray(0); 
  
  
-	obj_delete(o_cube);
+	 
 }
  
 
@@ -483,6 +296,7 @@ void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y){
 
 void model_cube_draw(Model_cube p [static 1]){
  
+	glBindTexture(GL_TEXTURE_2D, p->texture01);
 	glBindVertexArray(p->VAO);
 	glDrawArraysInstanced(GL_TRIANGLES,0,max_sides*6,p->inst_cnt);
 

@@ -43,6 +43,7 @@ static unsigned int shader_map;
 
 #include "../models/model_floor.h"
 
+
 #include "../models/model_cube.h"
 
 
@@ -55,7 +56,7 @@ static unsigned int shader_map;
 
 #include "model_cube.h"
  
-#include "camera.h"
+//#include "camera.h"
 
 // typedef struct {
 // 	Camera_s * camera ;
