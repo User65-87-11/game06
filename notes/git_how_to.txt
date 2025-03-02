@@ -1,0 +1,7 @@
+git checkout -b before_indexed
+
+git push --set-upstream origin before_indexed
+
+git checkout main
+
+git merge before_indexed
