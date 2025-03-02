@@ -9,17 +9,19 @@
 #include <cglm/mat4.h>
 #include <cglm/cglm.h>
 #include <cglm/types.h>
+#include <stdint.h>
 
  
 constexpr static size_t max_sides = 6;
+
 
 typedef struct Model_cube Model_cube;
 
 typedef struct Model_cube_inst
 {
-	int idx;
+	int arr_idx;
 	int tilex,tiley;
-	
+	int ID;
 
 
 	
@@ -29,26 +31,27 @@ typedef struct Model_cube_inst
 
 typedef struct Model_cube{
  
-	unsigned int shader_id;
+ 
 	unsigned int VAO;
 	unsigned int VBO_NORM,VBO_COL,VBO_VERT,VBO_TEXTCOORD,VBO_TRANSFORM;
+	unsigned int VAO_ID, VBO_ID;
 	unsigned int texture01;
 	size_t inst_cnt;
 	Model_cube_inst  *insts ;
 
-	 
+	
+	//wrong use , but ok
 	mat4 * m4_models ;
 	vec4 * v4_colors ;
-	struct {
 
-	}s;
+	
 	
   
 } Model_cube;
 
  
 extern void model_cube_free(Model_cube  *p [static 1]);
-extern void model_cube_draw(Model_cube p [static 1]);
+//extern void model_cube_draw(Model_cube p [static 1]);
 extern void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y);
 extern void model_cube_update_buffers(Model_cube p [static 1]);
 extern void model_cube_init(Model_cube * ref[static 1]);
@@ -90,7 +93,18 @@ extern Model_floor * model_floor;
 extern Model_cube * model_cube;
 
 
+void model_id_itof4(int id,float *v4)
+{
  
+
+    // Convert the ARGB components to floats in the range [0.0, 1.0]
+    v4[3] =  1.0f;
+    v4[2] =  ((id >> 16) & 0xFF) / 255.0f;
+    v4[1] =  ((id >> 8) & 0xFF) / 255.0f;
+    v4[0] =  ((id ) & 0xFF) / 255.0f;
+
+	 
+}
 void model_cube_init(Model_cube * ref[static 1]){
  
 	if(*ref)
@@ -102,16 +116,14 @@ void model_cube_init(Model_cube * ref[static 1]){
  
 	
 	 
-	model_cube->inst_cnt = 1;
+	model_cube->inst_cnt = 2;
 
-	if(model_cube->inst_cnt > model_floor->num_inst) 
-	{
-		model_cube->inst_cnt = model_floor->num_inst;
-	}
+ 
 	model_cube->insts = calloc(model_cube->inst_cnt,sizeof(Model_cube_inst) );
 	model_cube->m4_models = malloc(model_cube->inst_cnt*sizeof(mat4));
 	model_cube->v4_colors = malloc(model_cube->inst_cnt*sizeof(vec4));
-	srand(time(NULL));
+	vec4 * v4_inst_ids = malloc(model_cube->inst_cnt*sizeof(vec4));
+	 
 
  
 	float cellSize = camera->tile_size;
@@ -119,12 +131,16 @@ void model_cube_init(Model_cube * ref[static 1]){
 	for(int i=0;i<model_cube->inst_cnt;i++)
  
 	{
-	 	int tiley = i / camera->tile_size ;
-		int tilex = i % (int)camera->tile_size;
-
+	 	int tiley = i / cellSize ;
+		int tilex = i % (int)cellSize;
+		printf("pos: %i , %i \n",tilex,tiley);
  
 		glm_mat4_identity((vec4 *)&model_cube->m4_models[i]);
  
+		vec4 z = {scale,scale,scale,1.f};
+		glm_scale((vec4 *)&model_cube->m4_models[i], z);
+
+
 		float * color  ;
 	
 		float black [4]={0.0f,0.0f,0.0f,1.0f};
@@ -135,14 +151,19 @@ void model_cube_init(Model_cube * ref[static 1]){
 
 		model_cube_move_to_tile(&model_cube->insts[i], tilex, tiley);
 	
-		vec4 z = {scale,scale,scale,1.f};
-		glm_scale((vec4 *)&model_cube->m4_models[i], z);
+		
 
  
 
 		glm_vec4_copy(color, (float *)&model_cube->v4_colors[i]);
- 
-		model_cube->insts[i].idx  = i;
+		
+		int  temp_id =  0xff000000 +i;
+		model_cube->insts[i].arr_idx  = i;
+		model_cube->insts[i].ID = temp_id;
+
+		float  *f = (float*)&(v4_inst_ids[i]);
+		
+		model_id_itof4(temp_id,f);
  
 	}
 
@@ -180,7 +201,7 @@ void model_cube_init(Model_cube * ref[static 1]){
  
 	buffer_describe_vec3(model_cube->VBO_VERT,GL_ARRAY_BUFFER, 0, 0);
 	buffer_set_data(model_cube->VBO_VERT,GL_ARRAY_BUFFER, vdata_len,vdata, GL_STATIC_DRAW);
-	free(vdata);
+	
  
 
 	//--colors
@@ -199,7 +220,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 
 	buffer_describe_vec2(model_cube->VBO_TEXTCOORD, GL_ARRAY_BUFFER, 0, 2);
 	buffer_set_data(model_cube->VBO_TEXTCOORD, GL_ARRAY_BUFFER, tdata_len, tdata, GL_STATIC_DRAW);
-	free(tdata);
+	
 	
 
 	float * ndata;
@@ -211,7 +232,7 @@ void model_cube_init(Model_cube * ref[static 1]){
 	//norm per vertex
 	buffer_describe_vec3(model_cube->VBO_NORM,GL_ARRAY_BUFFER, 0, 3);
 	buffer_set_data(model_cube->VBO_NORM,GL_ARRAY_BUFFER, ndata_len, ndata, GL_STATIC_DRAW);
-	free(ndata);
+	
  
 ///--- model matrix
 
@@ -222,43 +243,72 @@ void model_cube_init(Model_cube * ref[static 1]){
  
 	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	glBindVertexArray(0); 
+
+
+	//--
+	glGenVertexArrays(1,&model_cube->VAO_ID);
+	glGenBuffers(1,&model_cube->VBO_ID);
  
+ 
+	glBindVertexArray(model_cube->VAO_ID); 
+
+	buffer_describe_vec4(model_cube->VBO_ID,GL_ARRAY_BUFFER, 1, 1);
+	buffer_set_data(model_cube->VBO_ID,
+		GL_ARRAY_BUFFER,
+		model_cube->inst_cnt*sizeof(vec4),  
+		v4_inst_ids, 
+		GL_STATIC_DRAW);
+
+	buffer_describe_vec3(model_cube->VBO_VERT,GL_ARRAY_BUFFER, 0, 0);
+	buffer_describe_mat4(model_cube->VBO_TRANSFORM,GL_ARRAY_BUFFER, 1, 10);
  
 	 
+	glBindVertexArray(0); 
+
+	free(vdata);
+	free(tdata);
+	free(ndata);
+	free(v4_inst_ids);
 }
  
 
 void model_cube_move_to_tile(Model_cube_inst p[static 1],int x,int y){
 
-	Model_cube_inst inst = *p;
-	inst.tilex = x;
-	inst.tiley = y;
+ 
+	p->tilex = x;
+	p->tiley = y;
+
+	float cellSize = camera->tile_size;
+	float scale = cellSize ;
 
 
-	float posx = x*camera->tile_size;
-	float posy = y*camera->tile_size;
+	float posx = x  * scale ;
+	float posy = y  * scale;
 	vec4 v ={posx,posy,0.0f ,1.0f};
  
 	
-	glm_mat4_identity((vec4 *)&model_cube->m4_models[inst.idx]);
-	glm_translate((vec4 *)&model_cube->m4_models[inst.idx],v);
+	// glm_mat4_identity((vec4 *)&model_cube->m4_models[p->arr_idx]);
+
+	// vec4 z = {scale,scale,scale,1.f};
+	// glm_scale((vec4 *)&model_cube->m4_models[p->arr_idx], z);
+
+	glm_translate((vec4 *)&model_cube->m4_models[p->arr_idx],v);
 	
  
 	 
-	*p = inst;
+	 
 	
 }
 
-void model_cube_draw(Model_cube p [static 1]){
+// void model_cube_draw(Model_cube p [static 1]){
  
-	glBindTexture(GL_TEXTURE_2D, p->texture01);
-	glBindVertexArray(p->VAO);
-	glDrawArraysInstanced(GL_TRIANGLES,0,max_sides*6,p->inst_cnt);
+// 	glBindTexture(GL_TEXTURE_2D, p->texture01);
+// 	glBindVertexArray(p->VAO);
+// 	glDrawArraysInstanced(GL_TRIANGLES,0,max_sides*6,p->inst_cnt);
 
 	
-}
+// }
 void model_cube_free(Model_cube  *p [static 1]){
 	if((*p)){
 		free((*p)->insts);

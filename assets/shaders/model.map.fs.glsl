@@ -15,6 +15,6 @@ void main()
  
 	//out_color = frag_color;
 
-	out_color  = texture(tx_texture,fs_texture_coords)  ;
+	out_color  = texture(tx_texture,fs_texture_coords) * frag_color  ;
  
 }
